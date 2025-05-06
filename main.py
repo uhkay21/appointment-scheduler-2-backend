@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import date as date_type
 from appointments import (
-    get_business, get_services, get_available_slots,
-    create_appointment
+    get_business, get_services, get_available_slots, get_appointments,
+    create_appointment, get_all_clients, get_client_by_id
 )
 
 app = FastAPI()
@@ -63,4 +63,27 @@ def create_new_appointment(appointment: AppointmentCreate):
         raise HTTPException(status_code=400, detail="Could not create appointment")
     return result
 
+@app.get("/appointments")
+def read_appointments():
+    return get_appointments()
+
+@app.get("/clients")
+def read_all_clients():
+    """
+    Get all clients
+    :return:
+    """
+    return get_all_clients()
+
+@app.get("/clients/{client_id}")
+def read_client(client_id: int):
+    """
+    Get client by ID
+    :param client_id:
+    :return:
+    """
+    client = get_client_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return client
 # Run with: uvicorn main:app --reload

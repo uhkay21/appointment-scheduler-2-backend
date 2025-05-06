@@ -20,11 +20,35 @@ def get_business(business_id):
     print(response)
     # return response.data[0] if response.data else None
 
+def get_all_clients():
+    """Get all clients"""
+    response = (supabase.table("clients")
+                .select("*")
+                .execute())
+    print(response)
+    return response.data if response.data else None
+
+def get_client_by_id(client_id):
+    """Get a client by ID"""
+    response = (supabase.table("clients")
+                .select("*")
+                .eq("id", client_id)
+                .execute())
+    return response.data[0] if response.data else None
+
 def get_services(business_id):
     """Get all services for a business"""
     response = (supabase.table("services")
                 .select("*")
                 .eq("business_id", business_id)
+                .execute())
+
+    return response.data
+
+def get_appointments():
+    """Get all appointments for a business"""
+    response = (supabase.table("appointments")
+                .select("*")
                 .execute())
 
     return response.data
