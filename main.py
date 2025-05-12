@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import date as date_type
 from appointments import (
-    get_business, get_services, get_available_slots, get_appointments,
+    get_all_businesses, get_business, get_services, get_available_slots, get_appointment_by_business,
     create_appointment, get_all_clients, get_client_by_id
 )
 
@@ -20,15 +20,24 @@ app.add_middleware(
 
 # Define request models
 class AppointmentCreate(BaseModel):
+    # id: int
+    business_id: int
     service_id: int
     client_id: int
-    date: str
+    staff_id: int
     start_time: str
+    end_time: str
+    notes: str
+    date: str
 
 # Routes
 @app.get("/")
 def read_root():
     return {"message": "Appointment Scheduler API"}
+
+@app.get("/businesses")
+def read_all_businesses():
+    return get_all_businesses()
 
 @app.get("/businesses/{business_id}")
 def read_business(business_id: int):
@@ -49,6 +58,8 @@ def read_services(business_id: int):
 
 @app.get("/services/{service_id}/slots")
 def read_available_slots(service_id: int, date: str):
+    # print(service_id)
+    # print(date)
     return {"slots": get_available_slots(service_id, date)}
 
 @app.post("/appointments")
@@ -57,15 +68,20 @@ def create_new_appointment(appointment: AppointmentCreate):
         appointment.service_id,
         appointment.client_id,
         appointment.date,
-        appointment.start_time
+        appointment.start_time,
+        # appointment.id,
+        appointment.business_id,
+        appointment.staff_id,
+        appointment.end_time,
+        appointment.notes
     )
     if not result:
         raise HTTPException(status_code=400, detail="Could not create appointment")
     return result
 
-@app.get("/appointments")
-def read_appointments():
-    return get_appointments()
+@app.get("/appointments/{business_id}")
+def read_appointments(business_id: int):
+    return get_appointment_by_business(business_id)
 
 @app.get("/clients")
 def read_all_clients():
