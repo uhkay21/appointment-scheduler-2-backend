@@ -132,4 +132,27 @@ def create_appointment(service_id, client_id, date, start_time, business_id, sta
     response = supabase.table("appointments").insert(appointment_data).execute()
     return response.data[0] if response.data else None
 
+def create_client(name, email, phone, notes=None):
+    """Create a new client"""
+    # First, check if client with this email already exists
+    response = (supabase.table("clients")
+                .select("*")
+                .eq("email", email)
+                .execute())
+    
+    # If client exists, return it
+    if response.data:
+        return response.data[0]
+    
+    # Otherwise, create a new client
+    client_data = {
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "notes": notes
+    }
+    
+    response = supabase.table("clients").insert(client_data).execute()
+    return response.data[0] if response.data else None
+
 # Add more functions as needed

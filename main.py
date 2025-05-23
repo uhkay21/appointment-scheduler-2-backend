@@ -1,10 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import date as date_type
+# from typing import List, Optional
+# from datetime import date as date_type, datetime
+# import os
+# from dotenv import load_dotenv
 from appointments import (
     get_all_businesses, get_business, get_services, get_available_slots, get_appointment_by_business,
-    create_appointment, get_all_clients, get_client_by_id
+    create_appointment, get_all_clients, get_client_by_id, create_client
 )
 
 app = FastAPI()
@@ -12,7 +15,7 @@ app = FastAPI()
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # When you push to production, restrict this to your frontend URL
+    allow_origins=["https://appointment-scheduler-ac2.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +32,13 @@ class AppointmentCreate(BaseModel):
     end_time: str
     notes: str
     date: str
+
+# Add this model to main.py with the other models
+class ClientCreate(BaseModel):
+    name: str
+    email: str
+    phone: str
+    notes: str = None
 
 # Routes
 @app.get("/")
@@ -102,4 +112,18 @@ def read_client(client_id: int):
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     return client
+
+# Add this endpoint to main.py
+@app.post("/clients")
+def create_new_client(client: ClientCreate):
+    """Create a new client"""
+    result = create_client(
+        client.name,
+        client.email,
+        client.phone,
+        client.notes
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="Could not create client")
+    return result
 # Run with: uvicorn main:app --reload
