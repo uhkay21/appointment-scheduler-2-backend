@@ -17,22 +17,60 @@ def get_business(business_id):
                 .select("*")
                 .eq("id", business_id)
                 .execute())
-    print(response)
-    # return response.data[0] if response.data else None
+    print(response.data)
+    return response.data[0] if response.data else None
+
+def get_all_businesses():
+    """Get all businesses"""
+    response = (supabase.table("businesses")
+                .select("*")
+                .execute())
+    print(response.data)
+    return response.data if response.data else None
+
+def get_all_clients():
+    """Get all clients"""
+    response = (supabase.table("clients")
+                .select("*")
+                .execute())
+    print(response.data)
+    return response.data if response.data else None
+
+def get_client_by_id(client_id):
+    """Get a client by ID"""
+    response = (supabase.table("clients")
+                .select("*")
+                .eq("id", client_id)
+                .execute())
+    print(response.data)
+    return response.data[0] if response.data else None
 
 def get_services(business_id):
-    """Get all services for a business"""
+    """Get all services for a specific business"""
     response = (supabase.table("services")
                 .select("*")
                 .eq("business_id", business_id)
                 .execute())
+    print(response.data)
+    return response.data if response.data else None
 
-    return response.data
+def get_appointment_by_business(business_id):
+    """Get all appointments for a business"""
+    response = (supabase.table("appointments")
+                .select("*")
+                .eq("business_id", business_id)
+                .execute())
+    print(response.data)
+    return response.data if response.data else None
 
 def get_available_slots(service_id, date):
-    """Get available time slots for a service on a specific date"""
+    """Get available timeslots for a service on a specific date"""
     # First, get the service to know its duration
-    service_response = supabase.table("services").select("*,businesses(*)").eq("id", service_id).execute()
+    service_response = (supabase.table("services")
+                        .select("*,businesses(*)")
+                        # .select("*,businesses_hours(*)")
+                        .eq("id", service_id).execute())
+
     if not service_response.data:
         return []
 
@@ -40,6 +78,7 @@ def get_available_slots(service_id, date):
     business = service["businesses"]
     duration = service["duration"]
 
+    # Check if the business is open on that date
     # Get business hours for the specific day
     day_of_week = datetime.strptime(date, "%Y-%m-%d").strftime("%A").lower()
     hours_str = business["business_hours"][day_of_week]
@@ -57,30 +96,63 @@ def get_available_slots(service_id, date):
     current = datetime.strptime(f"{date} {start_hour}:{start_minute}", "%Y-%m-%d %H:%M")
     end = datetime.strptime(f"{date} {end_hour}:{end_minute}", "%Y-%m-%d %H:%M")
 
-    while current + timedelta(minutes=duration) <= end:
+    while current + timedelta(minutes=int(duration)) <= end:
         slots.append(current.strftime("%H:%M"))
-        current += timedelta(minutes=duration)
+        current += timedelta(minutes=int(duration))
 
+    
     # Get booked appointments for that day
-    appointments_response = supabase.table("appointments").select("start_time").eq("service_id", service_id).eq("date", date).execute()
+    appointments_response = (supabase.table("appointments")
+                             .select("start_time")
+                             .eq("service_id", service_id)
+                             .eq("date", date).execute())
     booked_times = [appointment["start_time"] for appointment in appointments_response.data]
 
-    # Filter out booked slots
+    # # Filter out booked slots
     available_slots = [slot for slot in slots if slot not in booked_times]
 
     return available_slots
 
-def create_appointment(service_id, client_id, date, start_time):
+def create_appointment(service_id, client_id, date, start_time, business_id, staff_id, end_time, notes):
     """Create a new appointment"""
     appointment_data = {
+        # "id": id,
+        "business_id": business_id,
         "service_id": service_id,
         "client_id": client_id,
-        "date": date,
+        "staff_id": staff_id,
         "start_time": start_time,
-        "status": "scheduled"
+        "end_time": end_time,
+        "status": "scheduled",
+        "notes": notes,
+        "date": date
     }
 
+    print(appointment_data)
     response = supabase.table("appointments").insert(appointment_data).execute()
+    return response.data[0] if response.data else None
+
+def create_client(name, email, phone, notes=None):
+    """Create a new client"""
+    # First, check if client with this email already exists
+    response = (supabase.table("clients")
+                .select("*")
+                .eq("email", email)
+                .execute())
+    
+    # If client exists, return it
+    if response.data:
+        return response.data[0]
+    
+    # Otherwise, create a new client
+    client_data = {
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "notes": notes
+    }
+    
+    response = supabase.table("clients").insert(client_data).execute()
     return response.data[0] if response.data else None
 
 # Add more functions as needed
